@@ -58,4 +58,24 @@ class Application extends Controller {
 
 
   case class Model(hello: String, age: Int)
+
+  case class Msg($type: String)
+  case class Login(username: String, password: String) extends Msg("login")
+  case class LoginSuccess(user_type: String = "admin") extends Msg("login_successful")
+  case class LoginFailed() extends Msg("login_failed")
+  case class Ping(seq: Int = 1) extends Msg("ping")
+  case class Pong(seq: Int = 1) extends Msg("pong")
+  case class SubscribeTables() extends Msg("subscribe_tables")
+  case class TableList(tables: List[Table]) extends Msg("table_list")
+  case class Table(id: Int, name: String, participants: Int)
+  case class UnsubscribeTables() extends Msg("unsubscribe_tables")
+  case class NotAuthorized() extends Msg("not_authorized")
+  case class AddTable(after_id: Int, table: Table) extends Msg("add_table")
+  case class TableAdded(after_id: Int, table: Table) extends Msg("table_added")
+  case class UpdateTable(table: Table) extends Msg("update_table")
+  case class TableUpdated(table: Table) extends Msg("table_updated")
+  case class RemoveTable(id: Int) extends Msg("remove_table")
+  case class TableRemoved(id: Int) extends Msg("table_removed")
+  case class RemovalFailed(id: Int) extends Msg("removal_failed")
+  case class UpdateFailed(id: Int) extends Msg("update_failed")
 }
