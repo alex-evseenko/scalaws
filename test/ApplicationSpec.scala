@@ -54,16 +54,31 @@ class ApplicationSpec extends Specification {
       }
     }
 
-    "ws tables" in {
+    "ws tables/Login" in {
       running(TestServer(9000)) {
 
         val clientInteraction = new ClientInteraction("tables")
 
         clientInteraction.client.connectBlocking()
         clientInteraction.client.send("""{"$type": "login", "username": "user1234", "password": "password1234"}""")
+        clientInteraction.client.send("""{"$type": "ping", "seq": 1}""")
 
         eventually {
           clientInteraction.messages.contains("""{"$type":"login_successful","user_type":"admin"}""")
+        }
+      }
+    }
+
+    "ws tables/Ping" in {
+      running(TestServer(9000)) {
+
+        val clientInteraction = new ClientInteraction("tables")
+
+        clientInteraction.client.connectBlocking()
+        clientInteraction.client.send("""{"$type": "ping", "seq": 1}""")
+
+        eventually {
+          clientInteraction.messages.contains("""{"$type":"pong","seq":1}""")
         }
       }
     }

@@ -73,10 +73,10 @@ class Application extends Controller {
   object Msg {
     implicit object MsgFormat extends Format[Msg] {
       override def writes(o: Msg): JsValue = {
-        val loginSeq = Seq(
+        val seq = Seq(
           "$type" -> JsString(o.$type)
         )
-        JsObject(loginSeq)
+        JsObject(seq)
       }
 
       override def reads(json: JsValue): JsResult[Msg] = {
@@ -88,12 +88,12 @@ class Application extends Controller {
   object Login {
     implicit object LoginFormat extends Format[Login] {
       override def writes(o: Login): JsValue = {
-        val loginSeq = Seq(
+        val seq = Seq(
           "$type" -> JsString(o.$type),
           "username" -> JsString(o.username),
           "password" -> JsString(o.password)
         )
-        JsObject(loginSeq)
+        JsObject(seq)
       }
 
       override def reads(json: JsValue): JsResult[Login] = {
@@ -105,11 +105,11 @@ class Application extends Controller {
   object LoginSuccess {
     implicit object LoginSuccessFormat extends Format[LoginSuccess] {
       override def writes(o: LoginSuccess): JsValue = {
-        val loginSeq = Seq(
+        val seq = Seq(
           "$type" -> JsString(o.$type),
           "user_type" -> JsString(o.user_type)
         )
-        JsObject(loginSeq)
+        JsObject(seq)
       }
 
       override def reads(json: JsValue): JsResult[LoginSuccess] = {
@@ -121,10 +121,10 @@ class Application extends Controller {
   object LoginFailed {
     implicit object LoginFailedFormat extends Format[LoginFailed] {
       override def writes(o: LoginFailed): JsValue = {
-        val loginSeq = Seq(
+        val seq = Seq(
           "$type" -> JsString(o.$type)
         )
-        JsObject(loginSeq)
+        JsObject(seq)
       }
 
       override def reads(json: JsValue): JsResult[LoginFailed] = {
@@ -133,10 +133,85 @@ class Application extends Controller {
     }
   }
   case class Ping(seq: Int = 1) extends Msg("ping")
+  object Ping {
+    implicit object PingFormat extends Format[Ping] {
+      override def writes(o: Ping): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type),
+          "seq" -> JsNumber(o.seq)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[Ping] = {
+        JsSuccess(Ping())
+      }
+    }
+  }
   case class Pong(seq: Int = 1) extends Msg("pong")
+  object Pong {
+    implicit object PongFormat extends Format[Pong] {
+      override def writes(o: Pong): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type),
+          "seq" -> JsNumber(o.seq)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[Pong] = {
+        JsSuccess(Pong())
+      }
+    }
+  }
   case class SubscribeTables() extends Msg("subscribe_tables")
-  case class TableList(tables: List[Table]) extends Msg("table_list")
+  object SubscribeTables {
+    implicit object SubscribeTablesFormat extends Format[SubscribeTables] {
+      override def writes(o: SubscribeTables): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[SubscribeTables] = {
+        JsSuccess(SubscribeTables())
+      }
+    }
+  }
   case class Table(id: Int, name: String, participants: Int)
+  object Table {
+    implicit object TableFormat extends Format[Table] {
+      override def writes(o: Table): JsValue = {
+        val seq = Seq(
+          "id" -> JsNumber(o.id),
+          "name" -> JsString(o.name),
+          "participants" -> JsNumber(o.participants)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[Table] = {
+        JsSuccess(Table(0, "", 0))
+      }
+    }
+  }
+  case class TableList(tables: List[Table]) extends Msg("table_list")
+  object TableList {
+    implicit object TableListFormat extends Format[TableList] {
+      override def writes(o: TableList): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type),
+          "tables" -> JsArray(o.tables.map(table => Json.toJson(table)))
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[TableList] = {
+        JsSuccess(TableList(List[Table]()))
+      }
+    }
+  }
   case class UnsubscribeTables() extends Msg("unsubscribe_tables")
   case class NotAuthorized() extends Msg("not_authorized")
   case class AddTable(after_id: Int, table: Table) extends Msg("add_table")
@@ -148,6 +223,9 @@ class Application extends Controller {
   case class RemovalFailed(id: Int) extends Msg("removal_failed")
   case class UpdateFailed(id: Int) extends Msg("update_failed")
 
+  val listOfTables = new scala.collection.mutable.ArrayBuffer[Table]()
+  listOfTables += Table(1,  "table - James Bond", 7)
+  listOfTables += Table(2,  "table - Mission Impossible", 4)
 
   private def dispatchTableCommand(message: String) =
     try {
@@ -156,6 +234,7 @@ class Application extends Controller {
       (json \ "$type").asOpt[String].get match {
         case "login" => Json.toJson(LoginSuccess()).toString
         case "ping" => Json.toJson(Pong()).toString
+        case "subscribe_tables" => Json.toJson(TableList(listOfTables.toList)).toString
         case _ => Json.toJson(LoginFailed()).toString
       }
     } catch {
