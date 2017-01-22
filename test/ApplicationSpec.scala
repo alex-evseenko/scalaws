@@ -83,5 +83,19 @@ class ApplicationSpec extends Specification {
       }
     }
 
+    "ws tables/TableList" in {
+      running(TestServer(9000)) {
+
+        val clientInteraction = new ClientInteraction("tables")
+
+        clientInteraction.client.connectBlocking()
+        clientInteraction.client.send("""{"$type": "subscribe_tables"}""")
+
+        eventually {
+          clientInteraction.messages.contains("""{"$type":"table_list","tables":[{"id":1,"name":"table - James Bond","participants":7},{"id":2,"name":"table - Mission Impossible","participants":4}]}""")
+        }
+      }
+    }
+
   }
 }

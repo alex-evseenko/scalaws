@@ -231,6 +231,7 @@ class Application extends Controller {
     try {
       // parse message into Json and convert it to Msg object
       val json = Json.parse(message)
+      println(json)
       (json \ "$type").asOpt[String].get match {
         case "login" => Json.toJson(LoginSuccess()).toString
         case "ping" => Json.toJson(Pong()).toString
