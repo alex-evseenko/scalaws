@@ -184,7 +184,15 @@ class Application extends Controller {
       }
     }
   }
-  case class Table(id: Int, name: String, participants: Int)
+  case class Table(id: Int, name: String, participants: Int) {
+    override def equals(obj: scala.Any): Boolean = {
+      if (obj.isInstanceOf[Table]) {
+        if (id == obj.asInstanceOf[Table].id) true else false
+      } else {
+        false
+      }
+    }
+  }
   object Table {
     implicit object TableFormat extends Format[Table] {
       override def writes(o: Table): JsValue = {
@@ -292,11 +300,107 @@ class Application extends Controller {
     }
   }
   case class UpdateTable(table: Table) extends Msg("update_table")
+  object UpdateTable {
+    implicit object UpdateTableFormat extends Format[UpdateTable] {
+      override def writes(o: UpdateTable): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type),
+          "table" -> Json.toJson(o.table)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[UpdateTable] = {
+        val table = (json \ "table").as[Table]
+        JsSuccess(UpdateTable(table))
+      }
+    }
+  }
   case class TableUpdated(table: Table) extends Msg("table_updated")
+  object TableUpdated {
+    implicit object TableUpdatedFormat extends Format[TableUpdated] {
+      override def writes(o: TableUpdated): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type),
+          "table" -> Json.toJson(o.table)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[TableUpdated] = {
+        val table = (json \ "table").as[Table]
+        JsSuccess(TableUpdated(table))
+      }
+    }
+  }
   case class RemoveTable(id: Int) extends Msg("remove_table")
+  object RemoveTable {
+    implicit object RemoveTableFormat extends Format[RemoveTable] {
+      override def writes(o: RemoveTable): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type),
+          "id" -> JsNumber(o.id)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[RemoveTable] = {
+        val id = (json \ "id").as[Int]
+        JsSuccess(RemoveTable(id))
+      }
+    }
+  }
   case class TableRemoved(id: Int) extends Msg("table_removed")
+  object TableRemoved {
+    implicit object TableRemovedFormat extends Format[TableRemoved] {
+      override def writes(o: TableRemoved): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type),
+          "id" -> JsNumber(o.id)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[TableRemoved] = {
+        val id = (json \ "id").as[Int]
+        JsSuccess(TableRemoved(id))
+      }
+    }
+  }
   case class RemovalFailed(id: Int) extends Msg("removal_failed")
+  object RemovalFailed {
+    implicit object RemovalFailedFormat extends Format[RemovalFailed] {
+      override def writes(o: RemovalFailed): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type),
+          "id" -> JsNumber(o.id)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[RemovalFailed] = {
+        val id = (json \ "id").as[Int]
+        JsSuccess(RemovalFailed(id))
+      }
+    }
+  }
   case class UpdateFailed(id: Int) extends Msg("update_failed")
+  object UpdateFailed {
+    implicit object UpdateFailedFormat extends Format[UpdateFailed] {
+      override def writes(o: UpdateFailed): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type),
+          "id" -> JsNumber(o.id)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[UpdateFailed] = {
+        val id = (json \ "id").as[Int]
+        JsSuccess(UpdateFailed(id))
+      }
+    }
+  }
 
   val listOfTables = new scala.collection.mutable.ArrayBuffer[Table]()
   listOfTables += Table(1,  "table - James Bond", 7)
@@ -306,7 +410,6 @@ class Application extends Controller {
     try {
       // parse message into Json and convert it to Msg object
       val json = Json.parse(message)
-println("------> json: " + json.toString)
       (json \ "$type").asOpt[String].get match {
         case "login" => Json.toJson(LoginSuccess()).toString
         case "ping" => Json.toJson(Pong()).toString
@@ -317,6 +420,25 @@ println("------> json: " + json.toString)
           val table = addTable.table
           listOfTables += Table(id, table.name, table.participants)
           Json.toJson(TableAdded(id, table.name, table.participants)).toString
+        }
+        case "update_table" => {
+          val tableToUpdate = json.as[UpdateTable]
+          val idx = listOfTables.indexOf(tableToUpdate.table)
+          if (idx >= 0) {
+            listOfTables(idx) = tableToUpdate.table
+            Json.toJson(TableUpdated(tableToUpdate.table)).toString
+          } else {
+            Json.toJson(UpdateFailed(tableToUpdate.table.id)).toString
+          }
+        }
+        case "remove_table" => {
+          val tableToRemove = json.as[RemoveTable]
+          if (tableToRemove.id >= 0 && tableToRemove.id < listOfTables.size) {
+            listOfTables.remove(tableToRemove.id)
+            Json.toJson(TableRemoved(tableToRemove.id)).toString
+          } else {
+            Json.toJson(RemovalFailed(tableToRemove.id)).toString
+          }
         }
         case _ => Json.toJson(LoginFailed()).toString
       }

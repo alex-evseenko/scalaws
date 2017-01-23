@@ -111,5 +111,61 @@ class ApplicationSpec extends Specification {
       }
     }
 
+    "ws tables/UpdateTable positive case" in {
+      running(TestServer(9000)) {
+
+        val clientInteraction = new ClientInteraction("tables")
+
+        clientInteraction.client.connectBlocking()
+        clientInteraction.client.send("""{"$type": "update_table", "table": {"id": 1, "name": "New Name", "participants": 13}}""")
+
+        eventually {
+          clientInteraction.messages.contains("""{"$type":"table_updated","table":{"id":1,"name":"New Name","participants":13}}""")
+        }
+      }
+    }
+
+    "ws tables/UpdateTable negative case" in {
+      running(TestServer(9000)) {
+
+        val clientInteraction = new ClientInteraction("tables")
+
+        clientInteraction.client.connectBlocking()
+        clientInteraction.client.send("""{"$type": "update_table", "table": {"id": -1, "name": "New Name", "participants": 13}}""")
+
+        eventually {
+          clientInteraction.messages.contains("""{"$type":"update_failed","id":-1}""")
+        }
+      }
+    }
+
+    "ws tables/RemoveTable positive case" in {
+      running(TestServer(9000)) {
+
+        val clientInteraction = new ClientInteraction("tables")
+
+        clientInteraction.client.connectBlocking()
+        clientInteraction.client.send("""{"$type": "remove_table", "id": 1}""")
+
+        eventually {
+          clientInteraction.messages.contains("""{"$type":"table_removed","id":1}""")
+        }
+      }
+    }
+
+    "ws tables/RemoveTable negative case" in {
+      running(TestServer(9000)) {
+
+        val clientInteraction = new ClientInteraction("tables")
+
+        clientInteraction.client.connectBlocking()
+        clientInteraction.client.send("""{"$type": "remove_table",  "id": -1}""")
+
+        eventually {
+          clientInteraction.messages.contains("""{"$type":"removal_failed","id":-1}""")
+        }
+      }
+    }
+
   }
 }
