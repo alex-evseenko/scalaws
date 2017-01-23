@@ -97,5 +97,19 @@ class ApplicationSpec extends Specification {
       }
     }
 
+    "ws tables/AddTable" in {
+      running(TestServer(9000)) {
+
+        val clientInteraction = new ClientInteraction("tables")
+
+        clientInteraction.client.connectBlocking()
+        clientInteraction.client.send("""{"$type": "add_table", "after_id": 3, "table": {"id": 0, "name": "noname", "participants": 37}}""")
+
+        eventually {
+          clientInteraction.messages.contains("""{"$type":"table_added","id":3,"name":"noname","participants":37}""")
+        }
+      }
+    }
+
   }
 }

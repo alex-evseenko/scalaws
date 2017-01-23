@@ -179,7 +179,7 @@ class Application extends Controller {
       }
     }
   }
-  case class Table(var id: Int, name: String, participants: Int)
+  case class Table(id: Int, name: String, participants: Int)
   object Table {
     implicit object TableFormat extends Format[Table] {
       override def writes(o: Table): JsValue = {
@@ -192,7 +192,10 @@ class Application extends Controller {
       }
 
       override def reads(json: JsValue): JsResult[Table] = {
-        JsSuccess(Table(0, "", 0))
+        val id = (json \ "id").as[Int]
+        val name = (json \ "name").as[String]
+        val participants = (json \ "participants").as[Int]
+        JsSuccess(Table(id, name, participants))
       }
     }
   }
@@ -292,6 +295,7 @@ class Application extends Controller {
     try {
       // parse message into Json and convert it to Msg object
       val json = Json.parse(message)
+println("------> json: " + json.toString)
       (json \ "$type").asOpt[String].get match {
         case "login" => Json.toJson(LoginSuccess()).toString
         case "ping" => Json.toJson(Pong()).toString
@@ -299,8 +303,7 @@ class Application extends Controller {
         case "add_table" => {
           val id = (json \ "after_id").asOpt[Int].get
           val table = (json \ "table").asOpt[Table].get
-          table.id = id
-          listOfTables += table
+          listOfTables += Table(id, table.name, table.participants)
           Json.toJson(TableAdded(id, table.name, table.participants)).toString
         }
         case _ => Json.toJson(LoginFailed()).toString
