@@ -97,7 +97,9 @@ class Application extends Controller {
       }
 
       override def reads(json: JsValue): JsResult[Login] = {
-        JsSuccess(Login("", ""))
+        val username = (json \ "username").as[String]
+        val password = (json \ "password").as[String]
+        JsSuccess(Login(username, password))
       }
     }
   }
@@ -113,7 +115,8 @@ class Application extends Controller {
       }
 
       override def reads(json: JsValue): JsResult[LoginSuccess] = {
-        JsSuccess(LoginSuccess("admin"))
+        val userType = (json \ "user_type").as[String]
+        JsSuccess(LoginSuccess(userType))
       }
     }
   }
@@ -144,7 +147,8 @@ class Application extends Controller {
       }
 
       override def reads(json: JsValue): JsResult[Ping] = {
-        JsSuccess(Ping())
+        val seq = (json \ "seq").as[Int]
+        JsSuccess(Ping(seq))
       }
     }
   }
@@ -160,7 +164,8 @@ class Application extends Controller {
       }
 
       override def reads(json: JsValue): JsResult[Pong] = {
-        JsSuccess(Pong())
+        val seq = (json \ "seq").as[Int]
+        JsSuccess(Pong(seq))
       }
     }
   }
@@ -211,7 +216,8 @@ class Application extends Controller {
       }
 
       override def reads(json: JsValue): JsResult[TableList] = {
-        JsSuccess(TableList(List[Table]()))
+        val tableList = (json \\ "tables").map(jsvalue => jsvalue.as[Table]).toList
+        JsSuccess(TableList(tableList))
       }
     }
   }
@@ -258,7 +264,9 @@ class Application extends Controller {
       }
 
       override def reads(json: JsValue): JsResult[AddTable] = {
-        JsSuccess(AddTable(1, Table(1, "", 0)))
+        val afterId = (json \ "after_id").as[Int]
+        val table = (json \ "table").as[Table]
+        JsSuccess(AddTable(afterId, table))
       }
     }
   }
@@ -276,7 +284,10 @@ class Application extends Controller {
       }
 
       override def reads(json: JsValue): JsResult[TableAdded] = {
-        JsSuccess(TableAdded(1, "", 0))
+        val id = (json \ "id").as[Int]
+        val name = (json \ "name").as[String]
+        val participants = (json \ "participants").as[Int]
+        JsSuccess(TableAdded(id, name, participants))
       }
     }
   }
@@ -301,8 +312,9 @@ println("------> json: " + json.toString)
         case "ping" => Json.toJson(Pong()).toString
         case "subscribe_tables" => Json.toJson(TableList(listOfTables.toList)).toString
         case "add_table" => {
-          val id = (json \ "after_id").asOpt[Int].get
-          val table = (json \ "table").asOpt[Table].get
+          val addTable = json.as[AddTable]
+          val id = addTable.after_id
+          val table = addTable.table
           listOfTables += Table(id, table.name, table.participants)
           Json.toJson(TableAdded(id, table.name, table.participants)).toString
         }
