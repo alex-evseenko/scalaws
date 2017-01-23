@@ -179,7 +179,7 @@ class Application extends Controller {
       }
     }
   }
-  case class Table(id: Int, name: String, participants: Int)
+  case class Table(var id: Int, name: String, participants: Int)
   object Table {
     implicit object TableFormat extends Format[Table] {
       override def writes(o: Table): JsValue = {
@@ -213,9 +213,70 @@ class Application extends Controller {
     }
   }
   case class UnsubscribeTables() extends Msg("unsubscribe_tables")
+  object UnsubscribeTables {
+    implicit object UnsubscribeTablesFormat extends Format[UnsubscribeTables] {
+      override def writes(o: UnsubscribeTables): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[UnsubscribeTables] = {
+        JsSuccess(UnsubscribeTables())
+      }
+    }
+  }
   case class NotAuthorized() extends Msg("not_authorized")
+  object NotAuthorized {
+    implicit object NotAuthorizedFormat extends Format[NotAuthorized] {
+      override def writes(o: NotAuthorized): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[NotAuthorized] = {
+        JsSuccess(NotAuthorized())
+      }
+    }
+  }
   case class AddTable(after_id: Int, table: Table) extends Msg("add_table")
-  case class TableAdded(after_id: Int, table: Table) extends Msg("table_added")
+  object AddTable {
+    implicit object AddTableFormat extends Format[AddTable] {
+      override def writes(o: AddTable): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type),
+          "after_id" -> JsNumber(o.after_id),
+          "table" -> Json.toJson(o.table)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[AddTable] = {
+        JsSuccess(AddTable(1, Table(1, "", 0)))
+      }
+    }
+  }
+  case class TableAdded(id: Int, name: String, participants: Int) extends Msg("table_added")
+  object TableAdded {
+    implicit object TableAddedFormat extends Format[TableAdded] {
+      override def writes(o: TableAdded): JsValue = {
+        val seq = Seq(
+          "$type" -> JsString(o.$type),
+          "id" -> JsNumber(o.id),
+          "name" -> Json.toJson(o.name),
+          "participants" -> JsNumber(o.participants)
+        )
+        JsObject(seq)
+      }
+
+      override def reads(json: JsValue): JsResult[TableAdded] = {
+        JsSuccess(TableAdded(1, "", 0))
+      }
+    }
+  }
   case class UpdateTable(table: Table) extends Msg("update_table")
   case class TableUpdated(table: Table) extends Msg("table_updated")
   case class RemoveTable(id: Int) extends Msg("remove_table")
@@ -231,11 +292,17 @@ class Application extends Controller {
     try {
       // parse message into Json and convert it to Msg object
       val json = Json.parse(message)
-      println(json)
       (json \ "$type").asOpt[String].get match {
         case "login" => Json.toJson(LoginSuccess()).toString
         case "ping" => Json.toJson(Pong()).toString
         case "subscribe_tables" => Json.toJson(TableList(listOfTables.toList)).toString
+        case "add_table" => {
+          val id = (json \ "after_id").asOpt[Int].get
+          val table = (json \ "table").asOpt[Table].get
+          table.id = id
+          listOfTables += table
+          Json.toJson(TableAdded(id, table.name, table.participants)).toString
+        }
         case _ => Json.toJson(LoginFailed()).toString
       }
     } catch {
